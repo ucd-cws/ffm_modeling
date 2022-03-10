@@ -1,0 +1,113 @@
+﻿Variable,Description,Data Source
+ppt_Oct_wy - ppt_Sep_wy,Monthly precipitation for water year (mm),"PRISM Climate Group, 2017"
+ppt_sum1 - ppt_sum4,Total monthly precipition over previous 1 to 4 years (mm),"PRISM Climate Group, 2017"
+ppt_fall_wy - ppt_summer_wy,Seasonal precipitation for water year (mm),"PRISM Climate Group, 2017"
+ppt_ann_wy,Annual precipitation for water year (mm),"PRISM Climate Group, 2017"
+ppt_Oct_pwy - ppt_Sep_pwy,Monthly precipitation in previous water year (mm),"PRISM Climate Group, 2017"
+ppt_wint_pwy - ppt_summer_pwy,Seasonal precipitation for previous water year (mm),"PRISM Climate Group, 2017"
+ppt_ann_pwy,Annual precipitation for previous water year (mm),"PRISM Climate Group, 2017"
+tav_Oct_wy - tav_Sep_wy,Monthly average temperature in water year (deg C),"PRISM Climate Group, 2017"
+tav_sum1 - tav_sum4,Average temperature over previous 1 to 4 years (deg C),"PRISM Climate Group, 2017"
+tav_fall_wy - tav_summer_wy,Seasonal average temperature for water year (deg C),"PRISM Climate Group, 2017"
+tav_ann_wy,Annual average temperature for water year (deg C),"PRISM Climate Group, 2017"
+tav_Oct_pwy - tav_Sep_pwy,Monthly average temperature in previous water year (deg C),"PRISM Climate Group, 2017"
+tav_winter_pwy - tav_summer_pwy,Seasonal average temperature for previous water year (deg C),"PRISM Climate Group, 2017"
+tav_ann_pwy,Annual average temperature for previous water year (deg C),"PRISM Climate Group, 2017"
+run_Oct_wy - run_Sep_wy,Monthly runoff for water year (mm),McCabe and Wolock 2011
+run_sum1 - run_sum4,"Total annual runoff, including previous 1 - 4 years (mm)",McCabe and Wolock 2011
+run_fall_wy - run_summer_wy,Seaonal runoff for water year (mm),McCabe and Wolock 2011
+run_ann_wy,Annual runoff for water year (mm),McCabe and Wolock 2011
+run_Oct_pwy - run_Sep_pwy,Monthly runoff in previous water year (mm),McCabe and Wolock 2011
+run_fall_pwy - run_summer_pwy,Seaonal runoff for previous water year (mm),McCabe and Wolock 2011
+run_ann_pwy,Annual runoff for previous water year (mm),McCabe and Wolock 2011
+KRUG_RUNOFF,"Average annual runoff in the United States, 1951-80",Gebert et al. 1987
+PPTAVG_BASIN,"Mean annual precipitation (mm) of watershed, derived from 1971-2000 PRISM data.","Falcone, 2011"
+PPTAVG_CAT,"Mean annual precipitation (mm) of NHD catchment, derived from 1971-2000 PRISM data.","Falcone, 2011"
+AnnMaxPrecip,Watershed maximum average annual precipitation (mm),"Falcone, 2011"
+AnnMinPrecip,Watershed minimum average annual precipitation (mm),"Falcone, 2011"
+CAT_AnnMaxPrecip,"NHD Catchment average of maximum annual precipitation (mm), derived from PRISM (1971-2000).","Falcone, 2011"
+CAT_AnnMinPrecip,"NHD Catchment average of minimum annual precipitation (mm), derived from PRISM (1971-2000).","Falcone, 2011"
+PMAX_WS,Watershed maximum average annual precipitation in mm,"Wieczorek et al., 2018"
+PMIN_WS,Watershed minimum average annual precipitation in mm,"Wieczorek et al., 2018"
+TMIN_WS,Watershed minimum average annual air temperature,"Wieczorek et al., 2018"
+PERMH_WS,Watershed average value for the range in soil permeability (inches per hour),"Wieczorek et al., 2018"
+T_AVG_BASIN,"Mean annual air temperature (degrees C) of watershed, derived from 1971-2000 PRISM data.","Falcone, 2011"
+T_AVG_CAT,"Mean annual air temperature (degrees C) of NHD catchment, derived from 1971-2000 PRISM data.","Falcone, 2011"
+T_MAX_BASIN,"Watershed average of maximum monthly air temperature (degrees C) from 800m PRISM, derived from 30 years of record (1971-2000).","Falcone, 2011"
+T_MIN_BASIN,"Watershed average of minimum monthly air temperature (degrees C) from 800m PRISM, derived from 30 years of record (1971-2000).","Falcone, 2011"
+WD_OCT_BASIN - WD_SEP_BASIN,"Mean number of days of measurable precipitation in each month, 30-year average (1961-1990)","Falcone, 2011"
+WD_BASIN,"Watershed mean annual number of days with precipitation, derived from PRISM (1961-1990).","Falcone, 2011"
+WDMAX_BASIN,Watershed average of maximum monthly number of days of measurable precipitation (1961-1990),"Falcone, 2011"
+WDMIN_BASIN,Watershed average of minimum monthly number of days of measurable precipitation (1961-1990),"Falcone, 2011"
+ANN_CONS_WETDAYS,"Watershed mean annual number of consecutive days with measureable precipitation, derived from PRISM (1961-1990).","Falcone, 2011"
+ET,"Mean-annual actual evapotranspiration (ET), estimated using regression equation of Sanford and Selnick (2013)","Falcone, 2011"
+ET_CAT,"Mean-annual actual evapotranspiration (ET), estimated using regression equation of Sanford and Selnick (2013)","Falcone, 2011"
+PET,"Watershed mean potential annual evapotranspiration, mm/yr (PRISM 1971-2000).","Falcone, 2011"
+PET_CAT,"NHD Catchment mean potential annual evapotranspiration, mm/yr (PRISM 1971-2000).","Falcone, 2011"
+RH_BASIN,"Watershed mean relative humidity (%), derived from PRISM (1971-2000).","Falcone, 2011"
+RH_CAT,"NHD catchment mean relative humidity (%), derived from PRISM (1971-2000).","Falcone, 2011"
+SNOW_PCT_PRECIP,"Snow percent of total precipitation estimate, mean for period 1901-2000.  ","Falcone, 2011"
+FST32F_BASIN,"Mean Julian year day of the year of first freeze, from 30 years of record (1961-1990)","Falcone, 2011"
+LST32F_BASIN,"Mean Julian year day of the year of last freeze, from 30 years of record (1961-1990)","Falcone, 2011"
+pmpe,"Watershed mean index of aridity, computed as the difference between mean annual ET and mean annual precipitation.","Falcone, 2011"
+DRAIN_SQKM,Drainage area of basin (square kilometers),"Horizon Systems, 2012"
+SLOPE_PCT_30M,Mean basin slope (percent),"Horizon Systems, 2012"
+ELEV_MEAN_M_BASIN_30M,Mean basin elevation (meters),"Horizon Systems, 2012"
+ELEV_MIN_M_BASIN_30M,Minimum basin elevation (meters) ,"Horizon Systems, 2012"
+ELEV_MAX_M_BASIN_30M,Maximum basin elevation (meters),"Horizon Systems, 2012"
+ElvRng,Difference between maximum and minimum basin elevation (meters),"Horizon Systems, 2012"
+HLR 1 - 20,Proportion of basin occupied by HLR (proportion),"Wolock, 2003"
+CONTACT,Subsurface flow contact time index,"Falcone, 2011"
+BFI_AVE,Base Flow Index (BFI) is a ratio of base flow to total streamflow (percentage),"Falcone, 2011"
+TOPWET,Topographic wetness index,"Falcone, 2011"
+PERDUN,Dunne overland flow (percentage),"Falcone, 2011"
+RFACT,"Rainfall and Runoff factor (""R factor"" of Universal Soil Loss Equation); average annual value for period 1971-2000","Falcone, 2011"
+PERHOR,Horton overland flow (percentage),"Falcone, 2011"
+DEPTH_WATTAB,Average value of depth to seasonally high water table (feet),"Falcone, 2011"
+SILTAVE,Average value of silt content (percentage),"Falcone, 2011"
+CLAYAVE,Average value of clay content (percentage),"Falcone, 2011"
+SANDAVE,Average value of sand content (percentage),"Falcone, 2011"
+HGA,Percentage of soils in hydrologic group A (high infiltration rates),"Falcone, 2011"
+HGB,Percentage of soils in hydrologic group B (moderate infiltration rates),"Falcone, 2011"
+HGC,Percentage of soils in hydrologic group C (slow soil inflitration rates),"Falcone, 2011"
+HGD,Percentage of soils in hydrologic group D (very slow infiltration rates),"Falcone, 2011"
+KFACT_UP,Average K-factor value (erodibility factor) for the uppermost soil horizon in each soil component,"Falcone, 2011"
+NO10AVE,Average value of percent by weight of soil material less than 3 inches in size and passing a No. 10 sieve (2 mm),"Falcone, 2011"
+NO200AVE,Average value of percent by weight of soil material less than 3 inches in size and passing a No. 200 sieve (.074 mm),"Falcone, 2011"
+NO4AVE,Average value of percent by weight of soil material less than 3 inches in size and passing a No. 4 sieve (5 mm),"Falcone, 2011"
+OMAVE,Average value of organic matter content (percent by weight),"Falcone, 2011"
+PERMAVE,Average permeability (inches/hour),"Falcone, 2011"
+ROCKDEPAVE,Average value of total soil thickness examined (inches),"Falcone, 2011"
+BDAVE,Average value of bulk density (grams per cubic centimeter),"Falcone, 2011"
+AWCAVE,Average value for the range of available water capacity for the soil layer (inches of water per inches of soil depth),"Falcone, 2011"
+WTDEPAVE,Average value of depth to seasonally high water table (feet),"Falcone, 2011"
+granitic,Percent of watershed composed of geology class according to Reed & Bush (2001),"Falcone, 2011"
+sedimentary,Percent of watershed composed of geology class according to Reed & Bush (2001),"Falcone, 2011"
+volcanic,Percent of watershed composed of geology class according to Reed & Bush (2001),"Falcone, 2011"
+SGEO8,Deposits of mountain glaciers,"Falcone, 2011"
+SGEO21,"Micaceous residuum without much quartz; clay, mostly kaolinite","Falcone, 2011"
+SGEO44,Bouldery and sandy colluvium on granitic rocks,"Falcone, 2011"
+SGEO45,Clayey and loamy colluvium; on poorly consolidated rocks on lee sides of Pacific Coast Ranges,"Falcone, 2011"
+KO_pct,Mean watershed percent Potassium Oxide concentration of lithology (percent),"Olson and Hawkins, 2014"
+CaO_pct,Mean watershed percent Calcium Oxide concentration of lithology (percent),"Olson and Hawkins, 2014"
+FeO_pct,Mean watershed percent Iron Oxide concentration of lithology (percent),"Olson and Hawkins, 2014"
+MgO_pct,Mean watershed percent Magnesium Oxide concentration of lithology (percent),"Olson and Hawkins, 2014"
+P_pct,Mean watershed percent Phosphorus concentration of lithology (percent),"Olson and Hawkins, 2014"
+S_pct,Mean watershed percent Sulfur concentration of lithology (percent),"Olson and Hawkins, 2014"
+SiO_pct,Mean watershed percent Silica Oxide concentration of lithology (percent),"Olson and Hawkins, 2014"
+UCS,Mean watershed Rock Uniaxial Compressive Strength (megaPascals),"Olson and Hawkins, 2014"
+Lperm,Mean watershed rock hydraulic conductivity (x10^6 meters / second),"Olson and Hawkins, 2014"
+RECHARGE,Mean watershed annual natural groundwater recharge (days),"Wieckzorek et al., 2018"
+,,
+,,
+REFERENCE,,
+"Falcone, J.A., 2011, GAGES-II—Geospatial Attributes of Gages for Evaluating Streamflow, http://water.usgs.gov/GIS/metadata/usgswrd/XML/gagesII_Sept2011.xml.",,
+"Gebert, W. A., Graczyk, D. J., and Krug, W. R. (1987). Average annual runoff in the United States, 1951-80. U.S. Geological Survey doi:10.3133/ha710.",,
+"Horizon Systems, 2012, National Hydrography Dataset (NHD) Plus, Version 2, https://nhdplus.com/NHDPlus/NHDPlusV2_documentation.php",,
+"McCabe, G. J., & Wolock, D. M.,2011, Independent effects of temperature and precipitation on modeled runoff in the conterminous United States. Water Resources Research, 47(11).",,
+"Olson, J.R., and Hawkins, C.P., 2014, Geochemical and Geophysical Characteristics of the Conterminous United States, http://dx.doi.org/10.1029/2011WR011088.",,
+"PRISM Climate Group, Oregon State University, accessed January 2017, at http://prism.oregonstate.edu.",,
+"Reed, J. C., and C. A. Bush. 2001. Generalized Geologic Map of the Conterminous United States. US Geological Survey, Denver, Colorado.",,
+"Wieczorek, M., Jackson, S. E., and Schwarz, G. E. (2018). Select Attributes for NHDPlus Version 2.1 Reach Catchments and Modified Network Routed Upstream Watersheds for the Conterminous United States (ver. 3.0, January 2021): U.S. Geological Survey data release. Data Series. doi:10.5066/F7765D7V.",,
+"Wolock, D.M. 2003a. Hydrologic Landscape Regions of the United States, https://water.usgs.gov/GIS/metadata/usgswrd/XML/hlrus.xml",,
+"Wolock, D. M. 2003b. Estimated mean annual natural ground-water recharge in the conterminous United States. Open File Report No. 2003-311. US Geological Survey. doi:10.3133/ofr03311 ",,
