@@ -36,8 +36,11 @@ dat_examp <- dat_examp %>% select(-c("pmpe", "bdmax", "pmax_ws", "tmin_ws", "per
 # review
 names(dat_input)[207:ncol(dat_input)]
 names(dat_examp)[207:ncol(dat_examp)]
-
 # matches!
+
+# revise
+dat_input_rev <- dat_input
+colnames(dat_input_rev) <- colnames(dat_examp)
 
 
 # make dataframe of colnames just as a double check:
@@ -45,5 +48,6 @@ datnames <- tibble("input"= colnames(dat_input),
                    "examp"=colnames(dat_examp)
 )
 
+View(datnames)
 
-# looks good!
+write_csv(datnames, file = "data_input/model_application/input_var_names_xwalk.csv")
