@@ -36,7 +36,7 @@ met <- read_csv("data_input/model_training/met.csv.zip") %>% clean_names() %>%
 # "Peak_Dur_2","Peak_Fre_2","Peak_5","Peak_Dur_5","Peak_Fre_5","Peak_10","Peak_Dur_10","Peak_Fre_10",
 #  "SP_Mag","SP_Tim","SP_Dur","SP_ROC","DS_Mag_90","DS_Mag_50","DS_Tim","DS_Dur_WS")
 
-curmet<-"FA_Mag"
+curmet<-"FA_Tim"
 tmet<-subset(met,stat==curmet)
 
 # RANDOM FOREST MODEL -----------------------------------------------------
@@ -44,12 +44,15 @@ tmet<-subset(met,stat==curmet)
 ## Create random forest model - select one line of the following code!!!
 
 # Use this code for non-peak magnitude metrics, scaled by drainage area
+# "FA_Mag","SP_Mag", "Wet_BFL_Mag_50","Wet_BFL_Mag_10","DS_Mag_90","DS_Mag_50"
 rf<-randomForest(value/drain_sqkm~.,tmet[,c(5,9:116,124:209)],ntree=2000)
 
 # Use this code for peak flow magnitude metrics, scaled by drainage area
+# "Peak_2", "Peak_Dur_2","Peak_Fre_2","Peak_5","Peak_Dur_5","Peak_Fre_5","Peak_10","Peak_Dur_10","Peak_Fre_10"
 rf<-randomForest(value/drain_sqkm~.,tmet[,c(5,110:116,124:209)],ntree=2000)
 
 # Use this code for remaining metrics (non magnitude), not scaled by drainage area
+# Non-Mag: "SP_Tim","SP_Dur","SP_ROC","FA_Tim","FA_Dur","DS_Tim","DS_Dur_WS", "Wet_Tim","Wet_BFL_Dur"
 rf<-randomForest(value~.,tmet[,c(5,9:116,124:209)],ntree=2000)
 
 ## Loop through NHD segments, apply to RF model, then save out
