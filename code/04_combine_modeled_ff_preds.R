@@ -32,3 +32,19 @@ dat_med <- dat %>%
 
 summary(dat_med)
 table(dat_med$metric)
+
+# save out:
+write_csv(dat_med, "model_output/updated_lshasta_ffm_preds_means.csv")
+
+
+# Notes -------------------------------------------------------------------
+
+# look at comid 3917950 as it's where the canal joined
+
+# In comparing the two, there are many potential issues:
+
+# FA_Timing is very wrong, only P10 is even possible, the other values look like magnitudes
+# Peak 2, 5, 10: All have very low values...possible but unlikely
+# SP_Dur: the p75 and p90 seem very high (P90 is ~ 6 months)
+# SP_Mag: appears low, possible but unlikely if this is predicted
+# Wet_Tim: P50 is 30 days more than the original estimate, p75/p90 are very very high (~6 months)
