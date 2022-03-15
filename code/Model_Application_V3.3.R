@@ -85,17 +85,17 @@ for(k in 1:length(listcsv)){
 nhd<-rbindlist(ldf)
 
 # create dir
-fs::dir_create(paste0(filepath, "/CA_NHD_FFMs"))
-fwrite(nhd, paste0(filepath,"/CA_NHD_FFMs/", curmet, "_nhd.csv"))
+fs::dir_create(paste0("model_output/CA_NHD_FFMs"))
+fwrite(nhd, paste0("model_output/CA_NHD_FFMs/", curmet, "_nhd.csv"))
 
 ## For magnitude metrics only, run this code to compile drainage-area corrected predictions
-nhd$p10 <- nhd$area * nhd$p10 # scale predicitions to cfs
-nhd$p25 <- nhd$area * nhd$p25 # scale predicitions to cfs
-nhd$p50 <- nhd$area * nhd$p50 # scale predicitions to cfs
-nhd$p75 <- nhd$area * nhd$p75 # scale predicitions to cfs
-nhd$p90 <- nhd$area * nhd$p90 # scale predicitions to cfs
+nhd$p10 <- nhd$area * nhd$p10 # scale predictions to cfs
+nhd$p25 <- nhd$area * nhd$p25 # scale predictions to cfs
+nhd$p50 <- nhd$area * nhd$p50 # scale predictions to cfs
+nhd$p75 <- nhd$area * nhd$p75 # scale predictions to cfs
+nhd$p90 <- nhd$area * nhd$p90 # scale predictions to cfs
 
-fwrite(nhd,paste0(filepath,"/CA_NHD_FFMs/",curmet,"_nhd.csv"))
+fwrite(nhd,paste0("model_output/CA_NHD_FFMs/",curmet,"_nhd.csv"))
 
 ## Delete files in modresults directory
 fs::file_delete(fs::dir_ls(paste0(filepath,"modresults"), glob = "*.csv"))
