@@ -52,7 +52,8 @@ comlist<-list.files(nhd_predictor_input, pattern = "*csv")
 
 ## Specify a metric(s)
 #curmet <- "Peak_2" # ribbit
-curmets <- c("Wet_BFL_Mag_50","Wet_BFL_Mag_10","SP_Mag","DS_Mag_90","DS_Mag_50") # ribbit ribbit
+
+curmets <- c("FA_Dur","Wet_Tim","Wet_BFL_Dur","SP_Tim","SP_Dur","SP_ROC","DS_Tim","DS_Dur_WS") # ribbit ribbit
 
 # STEP 1: Run RF model for metric -----------------------------------
 
@@ -62,7 +63,7 @@ rfs <- map(curmets, ~f_run_rf_model(.x, met))
 
 # STEP 2: Make FFM Predictions from RF model -----------------------------------
 
-# map(comlist, ~f_make_ffm_preds(rf = rf, csv = .x))
+# map(comlist, ~f_make_ffm_preds(rf = rf, csv = .x)) # single metric
 
 for(i in seq_along(curmets)){
   print(glue("Working on {curmets[i]}"))
