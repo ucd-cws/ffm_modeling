@@ -53,7 +53,7 @@ comlist<-list.files(nhd_predictor_input, pattern = "*csv")
 ## Specify a metric(s)
 #curmet <- "Peak_2" # ribbit
 
-curmets <- c("FA_Dur","Wet_Tim","Wet_BFL_Dur","SP_Tim","SP_Dur","SP_ROC","DS_Tim","DS_Dur_WS") # ribbit ribbit
+curmets <- c("FA_Tim") # ribbit ribbit
 
 # STEP 1: Run RF model for metric -----------------------------------
 
