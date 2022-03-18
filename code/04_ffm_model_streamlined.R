@@ -51,35 +51,47 @@ nhd_predictor_input <- "data_input/model_application/CA_NHDPreds/"
 comlist<-list.files(nhd_predictor_input, pattern = "*csv")
 
 ## Specify a metric(s)
-#curmet <- "Peak_2" # ribbit
 
-curmets <- c("FA_Tim") # ribbit ribbit
+curmet <- "Peak_2" # ribbit
+
+#curmets <- c("FA_Tim") # ribbit ribbit
 
 # STEP 1: Run RF model for metric -----------------------------------
 
-#rf <- f_run_rf_model(curmet, met) # single
+rf <- f_run_rf_model(curmet, met) # single
 
-rfs <- map(curmets, ~f_run_rf_model(.x, met))
+#rfs <- map(curmets, ~f_run_rf_model(.x, met))
 
 # STEP 2: Make FFM Predictions from RF model -----------------------------------
 
-# map(comlist, ~f_make_ffm_preds(rf = rf, csv = .x)) # single metric
+map(comlist, ~f_make_ffm_preds(rf = rf, csv = .x)) # single metric
 
-for(i in seq_along(curmets)){
-  print(glue("Working on {curmets[i]}"))
-  # 1. Make preds ------------------------
-  map(comlist, ~f_make_ffm_preds(rf = rfs[[i]], csv = .x ))
-  # 2. List csv of individual preds ------
-  listcsv <- list.files(path = paste0("model_output/modresults"),
-                        pattern = "*.csv")
-  # 3. Condense into one file ------------
-  nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
-  # 4. Export files ----------------------
-  f_write_ffm_out(nhd_metrics = nhd, metric = curmets[i])
-  # 5. Remove temp files -----------------
-  fs::file_delete(fs::dir_ls("model_output/modresults"))
+# for(i in seq_along(curmets)){
+#   print(glue("Working on {curmets[i]}"))
+#   # 1. Make preds ------------------------
+#   map(comlist, ~f_make_ffm_preds(rf = rfs[[i]], csv = .x ))
+#   # 2. List csv of individual preds ------
+#   listcsv <- list.files(path = paste0("model_output/modresults"),
+#                         pattern = "*.csv")
+#   # 3. Condense into one file ------------
+#   nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
+#   # 4. Export files ----------------------
+#   f_write_ffm_out(nhd_metrics = nhd, metric = curmets[i])
+#   # 5. Remove temp files -----------------
+#   fs::file_delete(fs::dir_ls("model_output/modresults"))
+#
+# }
 
-}
+## STEP 3: Condense Into single File
 
+listcsv<- list.files(path = paste0("model_output/modresults"), pattern = "*.csv")
+# Read in all COMIDs and combine into single LIST, combine and save
+nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
 
+## STEP 4: Scale/Save Out
+f_write_ffm_out(nhd_metrics = nhd, metric = curmet)
+
+## STEP 5: cleanup
+## Delete files in modresults directory
+fs::file_delete(fs::dir_ls("model_output/modresults"))
 

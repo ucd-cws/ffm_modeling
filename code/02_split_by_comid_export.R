@@ -24,8 +24,8 @@ dat_input <- dat_input %>%
 #View(as.data.frame(names(dat_input))) # check
 
 # split out
-dat_split <- dat_input %>% group_split(comid) %>%
-  set_names(., unique(dat_input$comid))
+dat_split <- dat_input %>%
+  split(.$comid) #%>%
 names(dat_split) # check each is named
 
 

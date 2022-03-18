@@ -29,24 +29,29 @@ f_run_rf_model <- function(metric, data){
 
   # subset the data
   tmet <- data[data$stat==metric,]
+
   # now pick correct model dataset based on metric
   if(metric %in% metrics_mag){
     print("non-peak magnitude metric identified...running model")
     # scaled by drainage area for non-peak mag metrics
     rf<-randomForest(value/drain_sqkm~.,tmet[,c(5,9:116,124:209)],ntree=2000)
     print(glue("\nRF Model for {metric} done!"))
+
   } else if(metric %in% metrics_peak){
     print("Peak flow metric identified...running model")
     # scaled by drainage area for peak metrics
     rf<-randomForest(value/drain_sqkm~.,tmet[,c(5,110:116,124:209)],ntree=2000)
     print(glue("\nRF Model for {metric} done!"))
+
   } else if(metric %in% metrics_nonpeakmag){
     print("non-peak, non-mag flow metric identified...running model")
     # non peak non-mag metrics not scaled by drainage area
     rf<-randomForest(value~.,tmet[,c(5,9:116,124:209)],ntree=2000)
     print(glue("\nRF Model for {metric} done!"))
+
   } else(
     print(glue("\nIncorrect metric specified! \ncheck '{metric}' spelling?"))
+
   )
   return(rf)
 }
