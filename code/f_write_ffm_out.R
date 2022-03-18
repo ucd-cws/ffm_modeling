@@ -10,15 +10,14 @@ library(fs)
 library(glue)
 library(data.table)
 
-# FF Metrics --------------------------------------------------------------
-
-# Here is the list of metrics to predict across the stream network:
-## MAG metrics:
-metrics_mag <- c("FA_Mag","Wet_BFL_Mag_50","Wet_BFL_Mag_10","SP_Mag","DS_Mag_90","DS_Mag_50")
-
 ## Function to Scale Predictions by Area if Magnitude Metric -----------------
 
 f_write_ffm_out <- function(nhd_metrics, metric){
+
+  # Here is the list of metrics to predict across the stream network:
+  ## MAG/Peak metrics:
+  metrics_mag <- c("FA_Mag","Wet_BFL_Mag_50","Wet_BFL_Mag_10","SP_Mag","DS_Mag_90","DS_Mag_50") # don't include peak mag metrics? "Peak_2","Peak_5","Peak_10")
+
   fs::dir_create(paste0("model_output/CA_NHD_FFMs")) # create outdir location
   ## For mag metrics only, compile drainage-area corrected predictions
   if(metric %in% metrics_mag){

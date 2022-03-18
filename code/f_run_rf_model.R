@@ -9,11 +9,11 @@
 ## MAG metrics:
 metrics_mag <- c("FA_Mag","Wet_BFL_Mag_50","Wet_BFL_Mag_10","SP_Mag","DS_Mag_90","DS_Mag_50")
 
-## NON-PEAK, NON-MAG:
-metrics_nonpeakmag <- c("FA_Tim","FA_Dur","Wet_Tim","Wet_BFL_Dur","SP_Tim","SP_Dur","SP_ROC","DS_Tim","DS_Dur_WS")
+## NON-PEAK/MAG:
+metrics_nonpeakmag <- c("FA_Tim","FA_Dur","Wet_Tim","Wet_BFL_Dur","SP_Tim","SP_Dur","SP_ROC","DS_Tim","DS_Dur_WS", "Peak_Dur_2", "Peak_Fre_2", "Peak_Dur_5","Peak_Fre_5","Peak_Dur_10","Peak_Fre_10")
 
-## PEAK metrics:
-metrics_peak <- c("Peak_2","Peak_Dur_2","Peak_Fre_2","Peak_5","Peak_Dur_5","Peak_Fre_5","Peak_10","Peak_Dur_10","Peak_Fre_10")
+## PEAK MAG metrics:
+metrics_peak <- c("Peak_2","Peak_5","Peak_10")
 
 # Libraries ---------------------------------------------------------------
 

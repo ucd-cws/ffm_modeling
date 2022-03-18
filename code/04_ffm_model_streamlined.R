@@ -33,14 +33,16 @@ met <- read_csv("data_input/model_training/met.csv.zip") %>% clean_names() %>%
 # Metrics -----------------------------------------------------------------
 
 # Here is the list of metrics to predict across the stream network:
+
 ## MAG metrics:
 #metrics_mag <- c("FA_Mag","Wet_BFL_Mag_50","Wet_BFL_Mag_10","SP_Mag","DS_Mag_90","DS_Mag_50")
 
-## NON-PEAK, NON-MAG:
-#metrics_nonpeakmag <- c("FA_Tim","FA_Dur","Wet_Tim","Wet_BFL_Dur","SP_Tim","SP_Dur","SP_ROC","DS_Tim","DS_Dur_WS")
+## PEAK MAG metrics:
+#metrics_peak <- c("Peak_2","Peak_5","Peak_10")
 
-## PEAK metrics:
-#metrics_peak <- c("Peak_2","Peak_Dur_2","Peak_Fre_2","Peak_5","Peak_Dur_5","Peak_Fre_5","Peak_10","Peak_Dur_10","Peak_Fre_10")
+## NON-PEAK, NON-MAG:
+#metrics_nonpeakmag <- c("FA_Tim","FA_Dur","Wet_Tim","Wet_BFL_Dur","SP_Tim","SP_Dur","SP_ROC","DS_Tim","DS_Dur_WS", "Peak_Dur_2","Peak_Fre_2", "Peak_Dur_5","Peak_Fre_5", "Peak_Dur_10","Peak_Fre_10")
+
 
 # STEP 0: Setup Paths and Folders -----------------------------------
 
@@ -50,48 +52,48 @@ nhd_predictor_input <- "data_input/model_application/CA_NHDPreds/"
 ## list all csv file names with NHD predictors
 comlist<-list.files(nhd_predictor_input, pattern = "*csv")
 
+# SINGLE METRIC -----------------------------------------------------------
+
 ## Specify a metric(s)
+curmet <- "FA_Tim" # ribbit
 
-curmet <- "Peak_2" # ribbit
-
-#curmets <- c("FA_Tim") # ribbit ribbit
-
-# STEP 1: Run RF model for metric -----------------------------------
-
+## STEP 1: Run RF Model for Metric
 rf <- f_run_rf_model(curmet, met) # single
-
-#rfs <- map(curmets, ~f_run_rf_model(.x, met))
-
-# STEP 2: Make FFM Predictions from RF model -----------------------------------
-
+## STEP 2: Make FFM Predictions from RF model
 map(comlist, ~f_make_ffm_preds(rf = rf, csv = .x)) # single metric
-
-# for(i in seq_along(curmets)){
-#   print(glue("Working on {curmets[i]}"))
-#   # 1. Make preds ------------------------
-#   map(comlist, ~f_make_ffm_preds(rf = rfs[[i]], csv = .x ))
-#   # 2. List csv of individual preds ------
-#   listcsv <- list.files(path = paste0("model_output/modresults"),
-#                         pattern = "*.csv")
-#   # 3. Condense into one file ------------
-#   nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
-#   # 4. Export files ----------------------
-#   f_write_ffm_out(nhd_metrics = nhd, metric = curmets[i])
-#   # 5. Remove temp files -----------------
-#   fs::file_delete(fs::dir_ls("model_output/modresults"))
-#
-# }
-
 ## STEP 3: Condense Into single File
-
 listcsv<- list.files(path = paste0("model_output/modresults"), pattern = "*.csv")
-# Read in all COMIDs and combine into single LIST, combine and save
+## Read in all COMIDs and combine into single LIST, combine and save
 nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
-
 ## STEP 4: Scale/Save Out
 f_write_ffm_out(nhd_metrics = nhd, metric = curmet)
-
 ## STEP 5: cleanup
-## Delete files in modresults directory
 fs::file_delete(fs::dir_ls("model_output/modresults"))
+
+# MULTIPLE METRICS -------------------------------------------------------
+
+# Specify metrics:
+curmets <- c("Peak_2", "Peak_5", "Peak_10") # ribbit ribbit
+
+# run random forest model
+rfs <- map(curmets, ~f_run_rf_model(.x, met))
+
+# make predictions, condense, and export
+for(i in seq_along(curmets)){
+  print(glue("Working on {curmets[i]}"))
+  # 1. Make preds ------------------------
+  map(comlist, ~f_make_ffm_preds(rf = rfs[[i]], csv = .x ))
+  # 2. List csv of individual preds ------
+  listcsv <- list.files(path = paste0("model_output/modresults"),
+                        pattern = "*.csv")
+  # 3. Condense into one file ------------
+  nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
+  # 4. Export files ----------------------
+  f_write_ffm_out(nhd_metrics = nhd, metric = curmets[i])
+  # 5. Remove temp files -----------------
+  fs::file_delete(fs::dir_ls("model_output/modresults"))
+
+}
+
+
 

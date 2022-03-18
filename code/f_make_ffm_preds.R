@@ -24,12 +24,13 @@ f_make_ffm_preds <- function(rf, csv){
   # predict RF to NHD site
   preds <- predict(rf, dodo, predict.all=TRUE)
   # save median, 10th, 25th, 75th, & 90th percentiles
-  predp50<-apply(preds$individual,1,median)
+
   predp10<-apply(preds$individual,1,function(x) quantile(x,probs=0.1))
   predp25<-apply(preds$individual,1,function(x) quantile(x,probs=0.25))
+  predp50<-apply(preds$individual,1,median)
   predp75<-apply(preds$individual,1,function(x) quantile(x,probs=0.75))
   predp90<-apply(preds$individual,1,function(x) quantile(x,probs=0.9))
-  nhd<-data.frame(comid=dodo$comid,wy=dodo$wa_yr,area=dodo$drain_sqkm,p50=predp50,p10=predp10,p25=predp25,p75=predp75,p90=predp90)
+  nhd<-data.frame(comid=dodo$comid,wy=dodo$wa_yr,area=dodo$drain_sqkm,p10=predp10,p25=predp25,p50=predp50,p75=predp75,p90=predp90)
   # write to temp directory to storing output
   fs::dir_create("model_output/modresults")
   fwrite(nhd, file = fs::path("model_output/modresults/", csv),row.names=FALSE)
