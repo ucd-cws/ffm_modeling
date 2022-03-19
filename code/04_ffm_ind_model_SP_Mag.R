@@ -55,7 +55,7 @@ comlist<-list.files(nhd_predictor_input, pattern = "*csv")
 # SINGLE METRIC -----------------------------------------------------------
 
 ## Specify a metric(s)
-curmet <- "FA_Tim" # ribbit
+curmet <- "SP_Mag" # ribbit
 
 ## STEP 1: Run RF Model for Metric
 rf <- f_run_rf_model(curmet, met) # single
@@ -72,28 +72,28 @@ fs::file_delete(fs::dir_ls("model_output/modresults"))
 
 # MULTIPLE METRICS -------------------------------------------------------
 
-# Specify metrics:
-curmets <- c("Peak_2", "Peak_5", "Peak_10") # ribbit ribbit
-
-# run random forest model
-rfs <- map(curmets, ~f_run_rf_model(.x, met))
-
-# make predictions, condense, and export
-for(i in seq_along(curmets)){
-  print(glue("Working on {curmets[i]}"))
-  # 1. Make preds ------------------------
-  map(comlist, ~f_make_ffm_preds(rf = rfs[[i]], csv = .x ))
-  # 2. List csv of individual preds ------
-  listcsv <- list.files(path = paste0("model_output/modresults"),
-                        pattern = "*.csv")
-  # 3. Condense into one file ------------
-  nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
-  # 4. Export files ----------------------
-  f_write_ffm_out(nhd_metrics = nhd, metric = curmets[i])
-  # 5. Remove temp files -----------------
-  fs::file_delete(fs::dir_ls("model_output/modresults"))
-
-}
-
+# # Specify metrics:
+# curmets <- c("Peak_2", "Peak_5", "Peak_10") # ribbit ribbit
+#
+# # run random forest model
+# rfs <- map(curmets, ~f_run_rf_model(.x, met))
+#
+# # make predictions, condense, and export
+# for(i in seq_along(curmets)){
+#   print(glue("Working on {curmets[i]}"))
+#   # 1. Make preds ------------------------
+#   map(comlist, ~f_make_ffm_preds(rf = rfs[[i]], csv = .x ))
+#   # 2. List csv of individual preds ------
+#   listcsv <- list.files(path = paste0("model_output/modresults"),
+#                         pattern = "*.csv")
+#   # 3. Condense into one file ------------
+#   nhd <- read_csv(glue("model_output/modresults/{listcsv}"))
+#   # 4. Export files ----------------------
+#   f_write_ffm_out(nhd_metrics = nhd, metric = curmets[i])
+#   # 5. Remove temp files -----------------
+#   fs::file_delete(fs::dir_ls("model_output/modresults"))
+#
+# }
+#
 
 
