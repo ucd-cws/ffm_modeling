@@ -42,6 +42,7 @@ vignettes/*.pdf
 # docs
 *.docx
 docs/*docx
+docs/*html
 
 # DSTore
 .DS_Store
