@@ -1,0 +1,93 @@
+---
+title: "Updating Functional Flow Predictions"
+description: |
+  Steps to use revised watershed data to generate functional flow predictions
+author:
+  - name: Ryan Peek 
+    affiliation: Center for Watershed Sciences, UCD
+    affiliation_url: https://watershed.ucdavis.edu
+date: "`r Sys.Date()`"
+output: 
+  distill::distill_article:
+    toc: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, tidy = FALSE, message = FALSE, warning = FALSE)
+
+library(knitr)
+library(here)
+suppressPackageStartupMessages(library(tidyverse))
+
+```
+
+This document outlines the process used to revise watershed and streamline delineations, re-generate watershed scale data used in functional flow models, process these data (calculate accumulation values for the catchment or watershed for each variable), and finally re-run the functional flow predictive model to generate revised flow predictions for the functional flow metrics.
+
+# Revising a Watershed Delineation
+
+As part of the CEFF case study of the Little Shasta watershed, we identified a number of inaccuracies associated with the NHD watershed and streamline delineation.
+In part, this was because several canals were classified as streams, and thus were included in the watershed streamline delineation.
+In particular, the canal which delivers water from Lake Shastina was routed as if it drained into the Little Shasta River.
+
+To address inaccuracies in the NHD flowlines and catchments associated with designation of canals as streams, the following steps were taken:
+
+1.  We identified natural stream channel from artificial (canal) channels, and filtered all artificial segments out, and fixed mis-classified segments.
+2.  Identify catchments based on the new clean streamline dataset, and create a revised catchment layer. We attributed each catchment to a mainstem flowline on the Little Shasta.
+3.  Calculate the total drainage area for each mainstem NHD COMID segment and add this attribute information as a new column in the stream layer. Retain the old drainage area associated with each NHD segment to facilitate comparisons.
+
+
+## Correcting HUC boundaries
+
+(ref:LSHboundary) *The pre-existing watershed boundary for the Little Shasta watershed"*
+
+
+```{r lshbound, eval=TRUE, echo=FALSE, out.width='100%', fig.cap='(ref:LSHboundary)'}
+
+knitr::include_graphics(here("data_input/map_of_flowlines_existing_vs_cleaned.png"))
+
+```
+
+## Cleaned Watershed
+
+```{r cleanMap}
+
+library(mapview)
+mapviewOptions(fgb = FALSE)
+
+# flowlines with VAA data
+flow <- read_rds(here("data_input/final_flowlines_w_full_nhd_vaa.rds")) %>%
+  select(id:comid, gnis_name:reachcode, ftype:fcode, fromnode:dnhydroseq, ends_with("km"), geom)
+
+#length(unique(flow$comid))
+
+# List sink/isolated segments (N=19)
+sinks <- c(3917228, 3917212, 3917214, 3917218, 3917220,
+           3917960, 3917958, 3917276, 3917278, 3917274,
+           3917282, 3917284, 3917286, 3917280, 3917268,
+           3917256, 3917250, 3917272, 3917956)
+
+# make just sinks vs
+flow_sinks <- flow %>%
+  filter(comid %in% sinks) %>%
+  select(comid, hydroseq, uphydroseq, dnhydroseq, areasqkm, totdasqkm, divdasqkm)
+
+# make trimmed version
+flow_trim <- flow %>%
+  filter(!comid %in% sinks) %>%
+  select(comid, hydroseq, uphydroseq, dnhydroseq, areasqkm, totdasqkm, divdasqkm)
+
+catch_lsh <- read_rds(here("data_input/catchments_final_lshasta.rds"))
+
+# map
+mapview(catch_final,
+        col.regions="skyblue", color="dodgerblue",
+        alpha.regions=0.1, alpha=0.5,
+        layer.name="Catchments <br>trimmed to H10") +
+  mapview(flow_trim, zcol="hydroseq", lwd=2, layer.name="Hydroseq") +
+  mapview(flow_sinks, color="gray40", lwd=1, layer.name="Sinks to Drop")
+
+
+
+```
