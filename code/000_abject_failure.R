@@ -141,11 +141,12 @@ all_local <- sapply(lsh_fpath$comid, function(x, char) {
   filter(chars$local, characteristic_id == char)$characteristic_value
 
 }, char = chars$local$characteristic_id)
-
-local_characteristic <- data.frame(COMID = lsh_fpath$comid)
-local_characteristic <- sapply(local_characteristic, as.numeric)
-
-cat <- right_join(data$catchment, local_characteristic, by = c("FEATUREID" = "COMID"))
+all_local <- as.data.frame(all_local)
+all_local <- sapply(all_local, as.numeric)
+all_local <- t(as.data.frame(all_local))
+all_local <- t(all_local)
+local_characteristic <- data.frame(cbind(COMID = lsh_fpath$comid, all_local))
+#cat <- right_join(lsh_fpath$comid, local_characteristic, by = c("comid" = "COMID"))
 
 
 
