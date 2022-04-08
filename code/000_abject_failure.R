@@ -26,7 +26,6 @@ lsh_fpath <- get_tocomid(lsh_flowlines)
 mapview(catch, col.regions="gray") +
   mapview(lsh_fpath, zcol="hydroseq")
 
-
 # Network Attributes ------------------------------------------------------
 
 head(lsh_fpath <- select(sf::st_cast(lsh_fpath, "LINESTRING"),
@@ -35,7 +34,7 @@ head(lsh_fpath <- select(sf::st_cast(lsh_fpath, "LINESTRING"),
 mapview(lsh_fpath)
 
 
-# Generate Sorted Network -------------------------------------------------
+## Generate Sorted Network -------------------------------------------------
 
 # from nhdPlus tutorial: https://usgs-r.github.io/nhdplusTools/articles/advanced_network.html
 # sorts the flowpaths so headwaters come first and terminal flowpath last.
@@ -49,7 +48,7 @@ lsh_fpath['hydrosequence'] <- seq(nrow(lsh_fpath), 1)
 plot(lsh_fpath['hydrosequence'], key.pos = NULL)
 
 
-# Generate Total Accumulated Upstream Flowpath (ArbolateSum) --------------
+## Generate Total Accumulated Upstream Flowpath (ArbolateSum) --------------
 
 # Rename and compute weight
 lsh_fpath[["arbolatesum"]] <- calculate_arbolate_sum(
@@ -74,7 +73,12 @@ head(lsh_fpath <- dplyr::left_join(lsh_fpath, lsh_lp, by = c("comid" = "ID")))
 plot(lsh_fpath["topo_sort"], key.pos = NULL, reset = FALSE)
 plot(lsh_fpath["levelpath"], key.pos = NULL)
 
-# Starting COMID ----------------------------------------------------------
+
+# Using NLDI --------------------------------------------------------------
+
+# see here: https://waterdata.usgs.gov/blog/nldi_update/
+
+## Starting COMID ----------------------------------------------------------
 
 # downstream COMID: 3917946
 start_comid <- 3917946
@@ -92,9 +96,60 @@ flowlines <- navigate_nldi(nldi_feature = nldi_com,
                           mode = "upstreamTributaries",
                           distance_km = 200)
 
-# map and see the very messed up stream network
+# filter to just the comids we want (above):
+flowlines_filt <- flowlines$UT_flowlines %>%
+  filter(nhdplus_comid %in% lsh_fpath$comid)
+
+# map and see the very messed up stream network vs corrected
 mapview(flowlines$origin, cex=5, col.regions="orange") +
-  mapview(flowlines$UT_flowlines, cex=1, color="darkblue")
+  mapview(lsh_fpath, lwd=3.4, color="skyblue", layer.name="Revised LSH") +
+  mapview(flowlines$UT_flowlines, lwd=0.5, color="darkblue", legend=FALSE, layer.name="NHD Original")
+
+
+# What are NLDI Characteristics Avail? ------------------------------------
+
+chars <- discover_nldi_characteristics()
+View(chars$local)
+View(chars$total)
+
+# Download the NLDI Catch Info --------------------------------------------
+
+outlet_local <- get_nldi_characteristics(nldi_com, type = "local")
+
+outlet_local <- left_join(outlet_local$local, chars$local,
+                          by = "characteristic_id")
+
+outlet_local <- outlet_local %>%
+  select(ID = characteristic_id,
+         Description = characteristic_description,
+         Value = characteristic_value,
+         Units = units,
+         link = dataset_url) %>%
+  mutate(link = paste0('<a href="', link, '">link</a>'))
+
+DT::datatable(outlet_local)
+knitr::kable(outlet_local)
+
+
+# Download All Local Characteristics for Basin ----------------------------------
+
+all_local <- sapply(lsh_fpath$comid, function(x, char) {
+  chars <- get_nldi_characteristics(
+    list(featureSource = "comid", featureID = as.character(x)),
+    type = "local")
+
+  filter(chars$local, characteristic_id == char)$characteristic_value
+
+}, char = chars$local$characteristic_id)
+
+local_characteristic <- data.frame(COMID = lsh_fpath$comid)
+local_characteristic <- sapply(local_characteristic, as.numeric)
+
+cat <- right_join(data$catchment, local_characteristic, by = c("FEATUREID" = "COMID"))
+
+
+
+# Download Data in GPKG ---------------------------------------------------
 
 # download all the extra VAA info
 #subset_file <- tempfile(fileext = ".gpkg")
@@ -109,6 +164,9 @@ st_layers("data_input/nhdplus_vaa.gpkg")
 flowline <- sf::st_read("data_input/nhdplus_vaa.gpkg", "NHDFlowline_Network")
 catchment <- sf::st_read("data_input/nhdplus_vaa.gpkg", "CatchmentSP")
 waterbody <- sf::st_read("data_input/nhdplus_vaa.gpkg", "NHDWaterbody")
+
+# filter catchment to catch of interest:
+catch_filt <- catchment %>% filter(featureid %in% lsh_fpath$comid)
 
 # plot
 plot(sf::st_geometry(catchment), col=alpha("gray30", 0.2), border=alpha("gray20",0.8), lwd=0.2)
