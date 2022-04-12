@@ -86,6 +86,7 @@ mapview(lsh_fpath, color="gray", legend=FALSE, layer.name="Flowlines", lwd=6) +
   mapview(lsh_fpath_trim, lwd=1, zcol="hydroseq", legend=FALSE, layer.name="Selected Flowlines") +
   mapview(st_endpoint(lois), col.regions="orange", layer.name="LOI D/S")
 
+
 # FLOWLINE NETWORK -----------------------------------------------
 
 # next need to generate a clean flowline network
@@ -95,7 +96,7 @@ mapview(lsh_fpath, color="gray", legend=FALSE, layer.name="Flowlines", lwd=6) +
 # convert everything is a linestring
 #map(lsh_fpath_trim$geom, ~sf::st_geometry(.x)[[1]])
 lsh_fpath_trim_lstring <- sf::st_cast(lsh_fpath_trim, "LINESTRING")
-map(lsh_fpath_trim_lstring$geom, ~sf::st_geometry(.x)[[1]])
+#map(lsh_fpath_trim_lstring$geom, ~sf::st_geometry(.x)[[1]])
 
 # generate clean comid network
 lsh_comidnet <- get_tocomid(lsh_fpath_trim_lstring, return_dendritic = TRUE, missing = 0, add = TRUE)
@@ -117,7 +118,7 @@ lsh_comidnet <- lsh_comidnet %>%
 # check and sort
 lsh_flownet <- get_sorted(lsh_comidnet, split = FALSE)
 lsh_flownet['sort_order'] <- 1:nrow(lsh_flownet)
-plot(lsh_flownet['sort_order'])
+#plot(lsh_flownet['sort_order'])
 mapview(lsh_flownet, zcol="sort_order")
 # add a temp hydroseq ID
 # lsh_flownet['hydrosequence'] <- seq(nrow(lsh_flownet), 1)
@@ -215,9 +216,11 @@ st_layers("data_input/nhdplus_vaa.gpkg")
 
 # Read in NHD Flowline/Catch VAA ------------------------------------------------
 
+# get nhd flowlines
 nhd_vaa <- sf::st_read("data_input/nhdplus_vaa.gpkg", "NHDFlowline_Network") %>%
   filter(comid %in% lsh_fpath_trim$comid)
 
+# get nhd catchments
 catch_vaa <- sf::st_read("data_input/nhdplus_vaa.gpkg", "CatchmentSP")
 
 # preview
@@ -227,19 +230,37 @@ mapview(catch_vaa, lwd=6, color="gray", col.regions="gray", alpha.regions=0.3, l
   mapview(nhd_vaa, lwd=1.5, color="steelblue", layer.name="Revised LSH") +
   mapview(lois, color="red")
 
-# filter catchment to catch of interest (spatial join)
-catch_filt <- sf::st_join(x = st_transform(catch_vaa, 3310), y = catch, join=st_contains_properly, left=TRUE) %>% st_transform(4269)
-# preview
-mapview(catch_vaa) + mapview(catch_filt, col.regions="yellow")
-catch_filt <- catch_vaa %>% filter(gridcode %in% catch$GRIDCODE)
+# join catch with the flownet
+catch_vaa <- left_join(catch_vaa,
+                       st_drop_geometry(lsh_flownet) %>%
+                         select(comid:divergence, hydroseq, sort_order:levelpath), by=c("featureid"="comid"))
+
+# need to recalculate totdasqkm (TotDASqKM)
+catch_area <- select(nhd_vaa, comid, areasqkm) %>%
+  right_join(., prepare_nhdplus(nhd_vaa, 0, 0,
+                                purge_non_dendritic = FALSE,
+                             warn = FALSE),
+             by = c("comid"="COMID")) %>%
+  select(ID = comid, toID = toCOMID, area = areasqkm)
+
+new_da <- calculate_total_drainage_area(catch_area)
+
+catch_area$totda <- new_da
+catch_area$nhdptotda <- nhd_vaa$totdasqkm
+
+# replace the new_da in the nhd_vaa
+nhd_vaa <- nhd_vaa %>% select(-c(totdasqkm)) %>%
+  left_join(st_drop_geometry(catch_area), by=c("comid"="ID")) %>%
+  select(-c(toID)) %>% rename(totdasqkm = totda) %>%
+  relocate(totdasqkm, .after="areasqkm")
+
 
 # plot
-plot(sf::st_geometry(catch_vaa), col=alpha("gray30", 0.1), border=alpha("tan3",0.5), lwd=0.2)
-plot(sf::st_geometry(catch_filt), col=alpha("gray10", 0.2), border=alpha("brown2",0.5), lwd=0.2, add=TRUE)
+plot(sf::st_geometry(catch_vaa), col=alpha("gray30", 0.1), border=alpha("tan3",0.8), lwd=0.9)
+plot(catch_vaa["sort_order"], reset = FALSE, add=TRUE)
 plot(sf::st_geometry(lsh_flownet), col = "blue", add=TRUE, lwd = lsh_flownet$arbolatesum / 15)
 plot(sf::st_geometry(nhd_vaa), col = alpha("skyblue", 0.8), add=TRUE, lwd=0.7)
-plot(st_endpoint(lois), pch=21, cex = 1.5, bg = "red", add = TRUE)
-
+plot(st_endpoint(lois), pch=21, cex = 1.5, bg = "gray70", add = TRUE)
 
 ## What are NLDI Characteristics Avail? ------------------------------------
 
@@ -271,7 +292,7 @@ outlet_local <- outlet_local %>%
 
 ## Download All Local Characteristics for Basin ----------------------------------
 
-all_local <- sapply(lsh_fpath_trim$comid, function(x, char) {
+all_local <- sapply(lsh_flownet$comid, function(x, char) {
   chars <- get_nldi_characteristics(
     list(featureSource = "comid", featureID = as.character(x)),
     type = "local")
@@ -310,9 +331,11 @@ nhd_vaa[["arbolatesum"]] <- calculate_arbolate_sum(
   dplyr::select(nhd_vaa,
                 ID = comid, toID = tocomid, length = lengthkm))
 
+# update drainage area
 plot(sf::st_geometry(nhd_vaa), lwd = nhd_vaa$arbolatesum / 10)
 
 # using nhdplusTools function here to generate network and run accumulation
+
 lsh_net <- prepare_nhdplus(nhd_vaa, 0, 0, 0, purge_non_dendritic = FALSE, warn = FALSE)
 
 # NOTE need to update AREASKM here!!!!!!!
@@ -320,7 +343,8 @@ lsh_net <- prepare_nhdplus(nhd_vaa, 0, 0, 0, purge_non_dendritic = FALSE, warn =
 # RUN ACCUMULATION -------------------------------------------------------
 
 lsh_accum <- select(lsh_net, ID = COMID, toID = toCOMID) %>%
-  left_join(select(st_drop_geometry(nhd_vaa), COMID=comid, AreaSqKM=areasqkm),
+  left_join(select(st_drop_geometry(nhd_vaa),
+                   COMID=comid, AreaSqKM=areasqkm),
             by = c("ID" = "COMID")) %>%
   left_join(catch_dat, by = c("ID" = "comid"))
 
@@ -338,6 +362,9 @@ cat_accum <- right_join(catch_clean,
                   by = c("comid" = "ID")) %>% st_transform(4269)
 
 st_crs(cat_accum)==st_crs(nhd_vaa)
+
+mapview(cat_accum, zcol="tot_cat_pet")
+
 plot(cat_accum["tot_cat_pet"], reset = FALSE)
 plot(st_geometry(nhd_vaa), add = TRUE,
      lwd = nhd_vaa$streamorde, col = "lightblue")
