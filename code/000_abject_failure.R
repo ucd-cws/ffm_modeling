@@ -6,8 +6,8 @@ library(tidyverse)
 library(sf)
 library(nhdplusTools)
 library(lwgeom) # get endpoint with lwgeom
-library(mapview)
 library(units)
+library(mapview)
 mapviewOptions(fgb=FALSE)
 
 # DATA --------------------------------------------------------------------
@@ -313,7 +313,7 @@ all_local_df <- as.data.frame(all_local) %>%
 xwalk <- read_csv("data_input/model_application/input_var_names_xwalk.csv") %>%
   mutate(varscap = toupper(examp))
 
-## Get Underlying Catchmnet Data for Accumulation ----------------------------
+## Get Underlying Catchmnent Data for Accumulation ----------------------------
 
 catch_dat <- read_csv("https://github.com/ryanpeek/ffm_accumulation/blob/main/data_clean/07_final_catchment_data_for_accum.csv?raw=true")
 
