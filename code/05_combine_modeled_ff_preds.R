@@ -33,7 +33,7 @@ summary(dat_med)
 table(dat_med$metric)
 
 # add area back in for reference
-dat_area <- dat %>% select(comid, area) %>% distinct()
+dat_area <- dat %>% select(comid, area) %>% distinct(comid, .keep_all = TRUE)
 dat_med <- left_join(dat_med, dat_area)
 
 # save out:

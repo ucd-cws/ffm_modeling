@@ -137,10 +137,10 @@ t_avg_cat,t_avg_cat
 t_avg_basin,t_avg_basin
 cat_tmin7100,t_min_basin
 cat_tmax7100,t_max_basin
-ann_min_precip_basin,cat_ann_min_precip
-ann_min_precip,ann_min_precip
-ann_max_precip_basin,cat_ann_max_precip
-ann_max_precip,ann_max_precip
+ann_min_precip_basin,ann_min_precip
+ann_min_precip,cat_ann_min_precip
+ann_max_precip_basin,ann_max_precip
+ann_max_precip,cat_ann_max_precip
 cat_wdjan,wd_jan_basin
 cat_wdfeb,wd_feb_basin
 cat_wdmar,wd_mar_basin

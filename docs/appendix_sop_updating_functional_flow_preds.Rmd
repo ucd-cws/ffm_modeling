@@ -10,6 +10,7 @@ date: "`r Sys.Date()`"
 output: 
   distill::distill_article:
     toc: true
+    code_folding: true
 editor_options: 
   chunk_output_type: console
 ---
@@ -19,6 +20,7 @@ knitr::opts_chunk$set(echo = FALSE, tidy = FALSE, message = FALSE, warning = FAL
 
 library(knitr)
 library(here)
+library(glue)
 library(sf)
 suppressPackageStartupMessages(library(tidyverse))
 library(tmap)
@@ -345,7 +347,6 @@ flownet %>% st_drop_geometry() %>%
 
 ```
 
-
 ## Accumulation Data
 
 We previously pulled data required for the accumulation ([here](https://github.com/ryanpeek/ffm_accumulation)) variables used in the FF models. 
@@ -358,7 +359,11 @@ Here we join the areas, calculate the total areas of each catchment, and then pl
 
 ```{r catchDat, echo=TRUE, eval=TRUE, fig.cap="Catchment data example.", out.width="80%"}
 
-catch_dat <- read_csv("https://github.com/ryanpeek/ffm_accumulation/blob/main/data_clean/07_final_catchment_data_for_accum.csv?raw=true") %>% 
+#catch_dat <- read_csv("https://github.com/ryanpeek/ffm_accumulation/blob/main/data_clean/07_final_catchment_data_for_accum.csv?raw=true")
+# save local copy for speed
+#write_csv(catch_dat, here("output/final_catchment_data_for_accum.csv"))
+
+catch_dat <- read_csv(here("output/final_catchment_data_for_accum.csv")) %>% 
   # filter to years of interest
   filter(!wa_yr %in% c(1945:1949))
 
@@ -390,7 +395,7 @@ catch_dat <- catch_dat %>%
 
 ```
 
-We use the total watershed area (`r round(lsh_tot_da_area)` km^2) to calculate our area weights, which collectively sum to 1 for our watershed area.
+We use the total watershed area (`r round(lsh_tot_da_area)` km^2^) to calculate our area weights, which collectively sum to 1 for our watershed area.
 
 ## NLDI Routing
 
@@ -482,61 +487,225 @@ vars_awa <- xwalk %>%
     mod_input_final == "pet_basin" ~ "cat_pet", 
     mod_input_final == "rh_basin" ~ "cat_rh",
     mod_input_final == "pptavg_basin" ~"cat_ppt7100_ann",
-    TRUE ~ mod_input_final))
+    TRUE ~ mod_input_final), 
+    .after = mod_input_final)
 
 # filter to vars
 cat_df_awa <- catch_dat %>%
   select(comid:wa_yr, vars_awa$dat_output)
-  
-  # drop the non info vars
-  select(comidwa_yr, varnames_awa$dat_output) %>%
-  select(comid:wa_yr, comid_flowline:upper, everything())
 
 ```
 
+Now do the accumulation!! Here we pass the list of comids for each comid to a loop/`purrr::map` call to calculate each variable of interest that needs an area weighted average.
 
-```{r accumCalc}
+```{r accumCalc-awa, echo=TRUE, eval=TRUE}
+# make a named list of the comids
+network_ls_named <- set_names(network_df$comids, network_df$startCOMID)
 
+# filter to dataframe that is list of all comids for a given comid
+accum_awa_in <- map(network_ls_named, ~filter(cat_df_awa, comid %in% .x) %>%
+                 select(-c(comid, comid_wy, area, totda)))
 
+# iterate over
+accum_awa_out <- map(accum_awa_in, ~group_by(.x, wa_yr) %>%
+                  summarise(
+                    across(
+                      .cols  = ppt_jan_wy:krug_runoff,
+                      ~sum(.x*area_weight),
+                      .names = "{col}_awa")
+                    ))
 
-# create flownetwork for accumulation
-flownet_accum <- prepare_nhdplus(nhd_vaa, 0, 0, 0, purge_non_dendritic = TRUE, warn = TRUE) %>% 
-  select(-TotDASqKM) %>% 
-  # add the revised tot drainage area:
-  left_join(., st_drop_geometry(catch_vaa_rev) %>% select(featureid, TotDASqKM=areaSum, areasqkm), by= c("COMID"="featureid"))  
+# collapse as dataframe:
+accum_awa_df <- bind_rows(accum_awa_out, .id = "comid") %>%
+  mutate(comid=as.integer(comid)) %>%
+  # fix the awa ending
+  rename_with(~str_remove(., '_awa')) %>%
+  # rename calculated vars back to original variables of interest
+  rename(ann_min_precip_basin = cat_minp6190,
+         ann_max_precip_basin = cat_maxp6190,
+         # seems a duplicate here: ann_min_precip is same?
+         pptavg_basin = cat_ppt7100_ann,
+         et_basin = cat_et,
+         pet_basin = cat_pet,
+         rh_basin = cat_rh,
+         wtdepave = cat_wtdep)
 
-# need to change flownet_accum names
-flownet_accum <- flownet_accum %>% 
-  rename(ID = COMID, toID = toCOMID)
+glimpse(accum_awa_df[,1:30])
 
-# accum downstream
-accumulate_downstream <- function(x, var) {
+rm(accum_awa_in, accum_awa_out, vars_awa, cat_df_awa)
 
-  try(x <- st_drop_geometry(x), silent = TRUE)
-  cat_order <- select(x, .data$ID)
-  x[["toID"]] <- tidyr::replace_na(x[["toID"]], 0)
-  x <- get_sorted(x)
-  x[["toID_row"]] <- match(x[["toID"]], x[["ID"]])
-  var_out <- x[[var]]
-  if(any(is.na(x[[var]]))) {
-    warning("NA values found, accumulation math may fail.")
-  }
-  toid_row <- x[["toID_row"]]
-  for(cat in 1:length(var_out)) {
-    var_out[toid_row[cat]] <- var_out[toid_row[cat]] + var_out[cat]
-  }
-  x[[var]] <- var_out
-  x <- distinct(left_join(cat_order, x, by = "ID"))
-  return(x[[var]])
-}
-
-lsh_accum <- select(lsh_flownet, ID = comid, toID = tocomid, AreaSqKM=areasqkm, LENGTHKM=lengthkm, Hydroseq=hydroseq) %>% 
-  left_join(catch_dat, by = c("ID" = "comid"))
- 
-tst <- nhdplusTools:::accumulate_downstream(lsh_accum, var = "AreaSqKM")
-tst
 ```
 
+```{r writeaccum, echo=FALSE, eval=FALSE}
+# write it out!
+write_csv(accum_awa_df, file="output/lsh_catch_accumulated_awa_metrics_v01_trim.csv")
+
+```
+
+Next we need to do the same thing for the other variables that don't require an area weighed average. Things like `max`, `min`, etc. There are only a handful, see below.
+
+```{r non-awa-accum, echo=TRUE, eval=TRUE}
+
+# select all variables that need something other than avg
+vars_oth <- xwalk %>%
+  filter(accum_op_class %in% 
+           c("AVG", "MAX","MIN","RNG","SUM", "DOM")) %>%
+  mutate(dat_output = case_when(
+    mod_input_final == "t_avg_basin" ~ "cat_tav7100_ann",
+    mod_input_final == "area_sf" ~ "area",
+    TRUE ~ mod_input_final
+  ), .after = mod_input_final)
+
+# filter to vars
+cat_df_oth <- catch_dat %>%
+  select(comid:wa_yr, vars_oth$dat_output)
+
+# filter to dataframe that is list of all comids for a given comid
+accum_oth_in <- map(network_ls_named, 
+                    ~filter(cat_df_oth, comid %in% .x) %>%
+                 select(-c(comid, comid_wy, totda)))
+
+# iterate over
+accum_oth_out <- map(accum_oth_in, ~group_by(.x, wa_yr) %>%
+                 summarise(
+                   eco3 = names(which.max(table(eco3))),
+                   across(
+                     # min cols
+                     .cols  = c(cat_elev_min),
+                     ~min(.x),
+                     .names = "{col}_min"),
+                   across(
+                     # max
+                     .cols = c(cat_elev_max),
+                     ~max(.x),
+                     .names = "{col}_max"),
+                   # mean
+                   across(
+                     .cols = c(cat_tav7100_ann),
+                     ~mean(.x, na.rm=TRUE),
+                     .names = "{col}_avg"),
+                   across(
+                     .cols = c(area),
+                     ~sum(.x),
+                     .names = "{col}_sum"),
+                   across(
+                     .cols = c(elv_rng),
+                     ~first(.x),
+                     .names = "{col}"
+                   )
+                 ))
+
+# collapse as dataframe:
+accum_oth_df <- bind_rows(accum_oth_out, .id = "comid") %>%
+  mutate(comid=as.integer(comid)) %>%
+  rename(t_avg_basin=cat_tav7100_ann_avg) %>%
+  rename(cat_elev_min = cat_elev_min_min,
+         cat_elev_max = cat_elev_max_max,
+         area_sf = area_sum)
+
+glimpse(accum_oth_df)
+
+rm(accum_oth_in, accum_oth_out, vars_oth, cat_df_oth)
+
+```
+
+Finally, we need to pull the variables that need no calculation, but are static basin wide variables.
+
+```{r no-awa-accum, echo=TRUE, eval=TRUE}
+
+# need the no calc vars, subset and then join
+vars_nocalc <- xwalk %>%
+  filter(accum_op_class %in% c("NONE")) %>% 
+  mutate(dat_output = case_when(
+    mod_input_final == "pptavg_cat" ~ "cat_ppt7100_ann",
+    mod_input_final == "t_avg_cat" ~ "cat_tav7100_ann",
+    mod_input_final == "ann_min_precip" ~ "cat_minp6190",
+    mod_input_final == "ann_max_precip" ~ "cat_maxp6190",
+    mod_input_final == "et_cat" ~ "cat_et",
+    mod_input_final == "pet_cat" ~ "cat_pet",
+    mod_input_final == "rh_cat" ~ "cat_rh",
+    mod_input_final == "depth_wattab" ~ "cat_wtdep",
+    TRUE ~ mod_input_final), .after = mod_input_final)
+
+# filter to vars
+cat_df_none <- catch_dat %>%
+  select(comid:wa_yr, vars_nocalc$dat_output) %>% 
+  rename(pptavg_cat = cat_ppt7100_ann,
+         t_avg_cat = cat_tav7100_ann,
+         et_cat = cat_et,
+         ann_min_precip = cat_minp6190,
+         ann_max_precip = cat_maxp6190,
+         pet_cat = cat_pet,
+         rh_cat = cat_rh,
+         depth_wattab = cat_wtdep)
+
+# filter to dataframe that is list of all comids for a given comid
+accum_none_df <- map(network_ls_named, 
+                    ~filter(cat_df_none, comid %in% .x) %>%
+                 select(-c(comid:wa_yr))) %>% 
+  bind_rows(., .id = "comid") %>%
+  mutate(comid=as.integer(comid)) %>% 
+  distinct(comid, .keep_all = TRUE)
+
+rm(cat_df_none, vars_nocalc)
+
+```
+
+## Combine Accumulation Data and Export
+
+Finally we have a set of accumulated catchment variables associated with our comids. 
+
+```{r combineAccum, eval=TRUE, echo=TRUE}
+
+dat_final <- left_join(accum_awa_df, accum_oth_df) %>%
+  left_join(accum_none_df) %>%
+  mutate(comid_wy = glue::glue("{comid}_{wa_yr}"), .after=comid) 
+
+# comid check, should be 33 and TRUE
+glue("There are {nrow(flownet)} comids. \n Does the accumulated catchment data have the same number of COMIDs? [{length(unique(dat_final$comid)) == nrow(flownet)}]")
+
+```
+
+### Reorder Variable Names
+
+Before we can export, we need to reorder and rename to match the code for the functional flow modeling.
+
+```{r renameOrderAccum, echo=TRUE, eval=TRUE}
+# generate current col names
+final_names <- dat_final %>% colnames %>% as_tibble("final_names")
+input_sample <- read_csv(here("output/sample.csv")) %>% names(.) %>% as_tibble()
+
+# check cross walk
+#filter(xwalk, mod_input_raw %in% input_sample$value) %>% nrow()
+#filter(input_sample, !value %in% xwalk$mod_input_raw) 
+# these vars not part of model
+# pmpe            
+# BDMAX           
+# PMAX_WS         
+# TMIN_WS         
+# PERMH_WS        
+# PMIN_WS
+
+# left join to match var names with input sample
+xwalk_out <- left_join(input_sample, xwalk, by=c("value"="mod_input_raw")) %>%
+  filter(!is.na(mod_input_final))
+
+# reorder to match sample
+dat_final2 <- dat_final %>%
+  select(xwalk_out$mod_input_final) 
+
+# double check (should be 33 if using trimmed version)
+# dat_final2 %>% group_by(wa_yr) %>% tally() %>% View()
+```
+
+And now we can export for the modeling!
+
+```{r exporAccum, echo=TRUE, eval=TRUE}
+
+# Write Out ---------------------------------------------------------------
+write_csv(dat_final2, file = here("output/lsh_catch_accumulated_metrics.csv"))
+
+```
 
 
 

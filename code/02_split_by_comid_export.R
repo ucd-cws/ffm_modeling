@@ -13,8 +13,7 @@ dat_input <- f_import_accum_data()
 # read in xwalk
 xwalk <- read_csv("data_input/model_application/input_var_names_xwalk.csv")
 
-# so these cols are missing from accumulation (new input data),
-# but not really relevant in model:
+# so these cols are missing but not needed,
 # c("pmpe", "bdmax", "pmax_ws", "tmin_ws", "permh_ws", "pmin_ws"
 
 # set names to match for modeling

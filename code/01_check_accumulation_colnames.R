@@ -20,6 +20,9 @@ compare_df_cols(dat_input, dat_examp, strict_description = TRUE) %>% head(100)
 
 # which colnames don't exist
 select(dat_examp, colnames(dat_input))
+# `area_sf`, `cat_basin_slope`, `cat_elev_mean`, `cat_elev_min`, `cat_elev_max`
+# ? drain_sqkm,  slope_pct_30m, elev_mean_m_basin_30m, elev_min_m_basin_30m, elev_max_m_basin_30m,
+
 
 # some extra cols, names don't match but same data still
 names(dat_input)[207:ncol(dat_input)]
@@ -27,8 +30,7 @@ names(dat_examp)[207:ncol(dat_examp)]
 colnames(dat_examp)[106:112]
 colnames(dat_input)[106:112]
 
-# so these cols are missing from accumulation (new input data),
-# but not really relevant in model:
+# so these cols are not part of the model
 # c("pmpe", "bdmax", "pmax_ws", "tmin_ws", "permh_ws", "pmin_ws"
 
 dat_examp <- dat_examp %>% select(-c("pmpe", "bdmax", "pmax_ws", "tmin_ws", "permh_ws", "pmin_ws"))

@@ -10,10 +10,10 @@ library(glue)
 f_import_accum_data <- function() {
 
   # get raw data ID:
-  (data <- contentid::store(glue("https://github.com/ryanpeek/ffm_accumulation/blob/main/data_clean/08_accumulated_all_metrics.csv?raw=true")))
+  (data <- contentid::store(glue("output/lsh_catch_accumulated_metrics.csv")))
 
   # this is hardcoded so if accumulation file changes, we know and re-import
-  data_file <- contentid::resolve("hash://sha256/443f94b233e09faea7a7a71b4c83ce1472081f321baec7e13822c6d3897dfdd9")
+  data_file <- contentid::resolve("hash://sha256/b7ba17253be1a826b2b6bfd4cdc86f55281cb11f39868301ceb081efcd11af21")
 
   # read in data
   accum_dat <- read_csv(data_file)
