@@ -30,13 +30,13 @@ gages <- read_rds(here("data_input/gages_little_shasta.rds"))
 springs <- read_rds(here("data_input/springs_little_shasta.rds"))
 
 # flowlines
-lsh_fpath <- read_rds(here("data_input/final_flowlines_w_full_nhd_vaa.rds")) %>%
+lsh_flowline <- read_rds(here("data_input/final_flowlines_w_full_nhd_vaa.rds")) %>%
   # remove all the junk just get what we need
   select(comid, fromnode, tonode, divergence, ftype,
          areasqkm, lengthkm, gnis_id, hydroseq) %>%
   st_transform(4269)
 
-lois <- lsh_fpath %>%
+lois <- lsh_flowline %>%
   filter(comid %in% c(3917946, 3917950, 3917198))
 
 # see here for some more info/reading
@@ -88,14 +88,14 @@ sinks <- c(3917228, 3917212, 3917214, 3917218, 3917220,
            3917256, 3917250, 3917272, 3917956)
 
 # make just sinks
-lsh_fsinks <- lsh_fpath %>% filter(comid %in% sinks)
-lsh_fclean <- lsh_fpath %>% filter(!comid %in% sinks)
+lsh_fsinks <- lsh_flowline %>% filter(comid %in% sinks)
+lsh_fmain <- lsh_flowline %>% filter(!comid %in% sinks)
 
 # preview
 mapview(catch, col.regions="gray", color="gray20",
         alpha.regions=0.1, alpha=0.5,
         layer.name="Catchments <br>trimmed to H10") +
-  mapview(lsh_fclean, zcol="hydroseq", legend=FALSE, layer.name="Revised Flowlines<br>(hydroseq)") +
+  mapview(lsh_fmain, zcol="hydroseq", legend=FALSE, layer.name="Revised Flowlines<br>(hydroseq)") +
   mapview(lsh_fsinks, color="purple", lwd=1, layer.name="Sinks") +
   mapview(lwgeom::st_endpoint(lois), col.regions="orange", cex=6, layer.name="LOI") +
   mapview(springs, col.regions="steelblue",color="skyblue", alpha.regions=0.8, cex=4, layer.name="Springs") +
@@ -110,7 +110,7 @@ We can use the following code to download the NHD flowlines and catchments with 
 ```{r pullNHD, echo=TRUE, eval=FALSE}
 
 # download all the flowlines and catchments
-# grab based on COMIDs from catchments (could use lsh_fpath$comids)
+# grab based on COMIDs from catchments (could use lsh_flowline$comids)
 nhd_vaa <- subset_nhdplus(comids = as.integer(catch_clean$FEATUREID),
                          output_file = "data_input/nhdplus_vaa.gpkg", # subset_file,
                          nhdplus_data = "download",
@@ -128,32 +128,32 @@ We use the cleaned NHD flowline network and calculated the `arbolatesum` using t
 ```{r arbolate, echo=FALSE, eval=TRUE, fig.cap="Little Shasta delineated by total upstream length (wider line means greater distance upstream)", layout="l-page"}
 
 # first we need to make sure lines are strings
-#lsh_fpath_trim_lstring <- sf::st_cast(lsh_fpath_trim, "LINESTRING")
+#lsh_flowline_trim_lstring <- sf::st_cast(lsh_flowline_trim, "LINESTRING")
 
 library(nhdplusTools)
 
 # generate clean comid network
-lsh_comidnet <- get_tocomid(lsh_fclean, return_dendritic = TRUE, missing = 0, add = TRUE)
+flownet <- get_tocomid(lsh_fmain, return_dendritic = TRUE, missing = 0, add = TRUE)
 
 # regenerate/check flowline lengths:
-lsh_comidnet <- lsh_comidnet %>%
+flownet <- flownet %>%
   mutate(lengthkm_check = st_length(.)) %>%
   mutate(lengthkm_check = round(x = units::drop_units(lengthkm_check)/1000, 3))
 
 # check and sort
-lsh_flownet <- get_sorted(lsh_comidnet, split = FALSE)
-lsh_flownet['sort_order'] <- 1:nrow(lsh_flownet)
-#plot(lsh_flownet['sort_order'])
+flownet <- get_sorted(flownet, split = FALSE)
+flownet['sort_order'] <- 1:nrow(flownet)
+#plot(flownet['sort_order'])
 
 # Rename and compute upstream lengths
-lsh_flownet[["arbolatesum"]] <- calculate_arbolate_sum(
-  dplyr::select(lsh_flownet,
+flownet[["arbolatesum"]] <- calculate_arbolate_sum(
+  dplyr::select(flownet,
                 ID = comid, toID = tocomid, length = lengthkm_check))  
-lsh_flownet <- lsh_flownet %>% 
+flownet <- flownet %>% 
   dplyr::mutate(plotlwd = arbolatesum / 10)
 
 # plot based on upstream flowpath
-plot(sf::st_geometry(lsh_flownet), lwd = lsh_flownet$plotlwd)
+plot(sf::st_geometry(flownet), lwd = flownet$plotlwd)
 
 ```
 
@@ -180,10 +180,10 @@ catch_clean <- catch %>% filter(!GRIDCODE %in% to_drop) %>%
 
 # get nhd flowlines
 nhd_vaa <- sf::st_read(here("data_input/nhdplus_vaa.gpkg"), "NHDFlowline_Network", quiet=TRUE) %>%
-  filter(comid %in% lsh_fclean$comid)
+  filter(comid %in% lsh_fmain$comid)
 
 nhd_vaa_full <- sf::st_read(here("data_input/nhdplus_vaa.gpkg"), "NHDFlowline_Network", quiet=TRUE) %>%
-  filter(comid %in% lsh_fpath$comid)
+  filter(comid %in% lsh_flowline$comid)
 
 # get nhd catchments
 catch_vaa <- sf::st_read(here("data_input/nhdplus_vaa.gpkg"), "CatchmentSP", quiet=TRUE)
@@ -200,17 +200,17 @@ catch_vaa <- sf::st_read(here("data_input/nhdplus_vaa.gpkg"), "CatchmentSP", qui
 # LOIs:  3917198 (3) 3917950 (2), 3917946 (1)
 
 # get just the comids that were reassigned
-catch_clean_sel <- catch_clean %>% 
+catch_edited <- catch_clean %>% 
   filter(comid %in% c(3917200, 3917244, 3917198, 3917950, 3917948, 3917946)) %>% 
   mutate(comid_f = factor(comid_f))
 
 # custom color pal
 # library(qualpalr)
-# pal <- qualpal(length(catch_clean_sel), colorspace=list(h=c(0,360), s=c(0.3,1), l=c(0.2,0.8)))
+# pal <- qualpal(length(catch_edited), colorspace=list(h=c(0,360), s=c(0.3,1), l=c(0.2,0.8)))
 # 
 # mapview(lsh_flownet, lwd=3) + 
 #   mapview(catch_clean, col.regions = "gray", color="gray30", alpha.regions=0.2, lwd=0.8) +
-#   mapview(catch_clean_sel, zcol="comid_f", legend=FALSE,
+#   mapview(catch_edited, zcol="comid_f", legend=FALSE,
 #           col.regions = pal$hex, color="gray20",
 #           alpha.regions=0.8, lwd=2.3, alpha=0.8)
 ```
@@ -227,11 +227,11 @@ gm_osm <- read_osm(catch_clean, type = "esri-topo", raster=TRUE)
 tm_shape(gm_osm) + tm_rgb() +
   tm_shape(catch_clean) + 
   tm_polygons(col="gray", border.lwd = 0.3, border.alpha = 0.4, alpha=0.2, border.col = "gray30") +
-  tm_shape(catch_clean_sel) + 
+  tm_shape(catch_edited) + 
   tm_sf(col="comid_f", border.lwd = 2, alpha=0.7, border.col = "black", title = "COMID") +
   tm_shape(lois) + 
   tm_sf(col="navyblue", lwd=8) +
-  tm_shape(lsh_flownet) + tm_lines(col="royalblue2", lwd=2) +
+  tm_shape(flownet) + tm_lines(col="royalblue2", lwd=2) +
   tm_compass(type = "4star", position = c("left","bottom")) +
   tm_scale_bar(position = c("left","bottom")) +
   tm_layout(frame = FALSE,
@@ -267,16 +267,16 @@ Alternatively, we could use a catchment flowline network that only occurs in cat
 ```{r surfCatchonly, echo=FALSE, eval=TRUE, layout="l-page"}
 
 # trim to only catchments with streamlines
-catch_trim <- catch_vaa[nhd_vaa, ]
+catch_flowline <- catch_vaa[nhd_vaa, ]
 tmap_mode("plot")
 
 tm_shape(catch_clean) + 
   tm_polygons(col="gray", border.lwd = 0.3, border.alpha = 0.4, alpha=0.2, border.col = "gray30") +
-  tm_shape(catch_trim) + 
+  tm_shape(catch_flowline) + 
   tm_sf(col="cyan4", border.lwd = 2, alpha=0.5, border.col = "black") +
   tm_shape(lois) + 
   tm_sf(col="gold2", lwd=8) +
-  tm_shape(lsh_flownet) + tm_lines(col="blue2", lwd=2) +
+  tm_shape(flownet) + tm_lines(col="blue2", lwd=2) +
   tm_compass(type = "4star", position = c("left","bottom")) +
   tm_scale_bar(position = c("left","bottom")) +
   tm_layout(frame = FALSE,
@@ -291,10 +291,10 @@ tm_shape(catch_clean) +
             title.position = c(0.2, 0.95))
 
 # works with roboto  
-#tmap::tmap_save(filename = "figs/tmap_lshasta.png", width = 10, height = 8, dpi=300)
+#tmap::tmap_save(filename = "figs/tmap_lshasta_w_borders.png", width = 10, height = 8, dpi=300)
 
 # crop
-#knitr::plot_crop("figs/tmap_lshasta.png")
+#knitr::plot_crop("figs/tmap_lshasta_no_borders.png")
 ```
 
 
@@ -302,55 +302,240 @@ tm_shape(catch_clean) +
 
 Now that we have a re-delineated catchment map, we still need to create a clean flowline/catchment network that can be used to run accumulation code. We also need to update the drainage areas and make sure we have accurately reflected each catchment and COMID before we can have an accurate accumulation network.
 
+Here we will use **only** catchments that contain existing flow lines, to simplify the process and predictions. When or if it is necessary, we can go back and add additional catchments in. There are `r nrow(catch_flowline)` catchments and NHD segments that intersect, and `r nrow(catch_vaa)` total catchments in the HUC10 boundary of the Little Shasta.
+
+Here we show how to recalculate the catchment area and total drainage area.
+
 ```{r catchArea, echo=FALSE, eval=TRUE, layout="l-body-outset"}
+
 # need to recalculate totdasqkm (TotDASqKM)
 library(nhdplusTools)
 
-# first get smoothed clean catch version:
-catch_vaa <- sf::st_read(here("data_input/nhdplus_vaa.gpkg"), "CatchmentSP", quiet=TRUE)
 # then add in the comid routing (from catch_clean)
-catch_vaa_rev <- left_join(catch_vaa, 
+catch_vaa <- left_join(catch_vaa, 
                            st_drop_geometry(catch_clean) %>%
                              select(featureid=FEATUREID,
                                     comid_riv=comid, upper)) %>% 
-  mutate(upper = ifelse(is.na(upper), FALSE, upper)) %>% 
-  # calc area again:
-  st_transform(., 3310) %>% 
-  mutate(area2 = st_area(geom) %>% set_units("km^2") %>% drop_units(), .after=areasqkm)
+  mutate(upper = ifelse(is.na(upper), FALSE, upper))  
+  ## if need to calc area again:
+  # st_transform(., 3310) %>% 
+  # mutate(area_rev = st_area(geom) %>% set_units("km^2") %>% drop_units(), .after=areasqkm)
 
-# areas check out, now need to flowline columns to catch
-# but make collective area columns so comids are 1:1
-catch_vaa_rev <- catch_vaa_rev %>% 
-  group_by(comid_riv) %>% 
-  mutate(areaSum = sum(areasqkm), .after="area2") %>% 
-  ungroup()
-
-# add back to flow net and run code
+# prep data and then run accumulation for catchment area
 catchment_area <- prepare_nhdplus(nhd_vaa, 0, 0,
-                  purge_non_dendritic = FALSE, warn = FALSE) %>%
-    left_join(st_drop_geometry(catch_vaa_rev) %>% 
-              select(featureid, area_rev=areaSum), by=c("COMID"="featureid")) %>% 
+                                  purge_non_dendritic = FALSE, warn = FALSE) %>%
+  # add back in the correct areas to use in the calculation
+  left_join(st_drop_geometry(catch_vaa) %>% 
+              select(featureid, area_rev=areasqkm), by=c("COMID"="featureid")) %>% 
   select(ID = COMID, toID = toCOMID, area=area_rev)
 
 # calc total drainage area
-new_da <- calculate_total_drainage_area(catchment_area)
-
-# add back to catch area
-catchment_area$totda <- new_da
-catchment_area$nhdptotda <- nhd_vaa$totdasqkm
+catchment_area <- catchment_area %>% 
+  mutate(totda = calculate_total_drainage_area(.),
+         # add previous calc
+         nhdptotda = nhd_vaa$totdasqkm)
 
 # now add back to lsh_flownet
-lsh_flownet <- left_join(lsh_flownet, catchment_area,
+flownet <- left_join(flownet, catchment_area,
                            by=c("comid"="ID"))
-
-# add to catch_vaa
-# mapview(lsh_flownet, color="skyblue", legend=FALSE) +
-#   mapview(catch_vaa_rev, zcol="areaSum", legend=FALSE)
-lsh_flownet %>% st_drop_geometry() %>% 
+# preview table
+flownet %>% st_drop_geometry() %>% 
   select(comid:ftype, areasqkm, lengthkm, sort_order, arbolatesum, totda) %>% 
   kable()  
+
 ```
 
+
+## Accumulation Data
+
+We previously pulled data required for the accumulation ([here](https://github.com/ryanpeek/ffm_accumulation)) variables used in the FF models. 
+
+We calculate this based on an area weighted average, which is the area of a given COMID catchment, divided by the total watershed area. So the sum of `variable * [(local_catch_area) / (total_watershed_da)]`. In this case the area weight is the local catchment area divided by the total watershed area.
+
+The original data and crosswalked information is in this [file on github](https://github.com/ryanpeek/ffm_accumulation/blob/main/data_clean/08_accumulated_final_xwalk.csv). There are approximately 250+ variables in this dataset. We need to join all these variables to the updated network and catchment areas.
+
+Here we join the areas, calculate the total areas of each catchment, and then plot a single variable as an example.
+
+```{r catchDat, echo=TRUE, eval=TRUE, fig.cap="Catchment data example.", out.width="80%"}
+
+catch_dat <- read_csv("https://github.com/ryanpeek/ffm_accumulation/blob/main/data_clean/07_final_catchment_data_for_accum.csv?raw=true") %>% 
+  # filter to years of interest
+  filter(!wa_yr %in% c(1945:1949))
+
+# filter and match with nhd comids
+catch_dat <- filter(catch_dat, comid %in% catch_vaa$featureid) %>% 
+  # add updated areas
+  left_join(., catchment_area, by=c("comid"="ID")) %>% 
+  select(-toID, -nhdptotda) %>% 
+  relocate(any_of(c("area","totda")), .after=comid)
+
+# check rows match
+# nrow(catch_vaa)==length(unique(catch_dat$comid))
+# max watershed area for seelcted catchments?
+lsh_tot_da_area <- max(catchment_area$totda)
+
+# quick map
+catch_flowline %>%
+  left_join(catch_dat %>% filter(wa_yr==2011),
+            by=c("featureid"="comid")) %>%
+  tm_shape(.) + tm_sf(col="run_apr_wy", title="2011 Runoff: Apr (mm)") +
+  #tm_compass(type = "4star", position = c("left","bottom")) +
+  #tm_scale_bar(position = c("left","bottom")) +
+  tm_layout(frame = FALSE,
+            legend.outside = FALSE, 
+            attr.outside = FALSE)
+
+catch_dat <- catch_dat %>% 
+  mutate(area_weight = area/lsh_tot_da_area, .after=area)
+
+```
+
+We use the total watershed area (`r round(lsh_tot_da_area)` km^2) to calculate our area weights, which collectively sum to 1 for our watershed area.
+
+## NLDI Routing
+
+For every COMID, we want to have routing the extends to every COMID upstream (or upstream to downstream). This approach let's us list all the COMIDs associated with any starting COMID.
+
+```{r nldiNetwork, echo=FALSE, eval=FALSE}
+
+library(nhdplusTools)
+
+flownet_accum <- prepare_nhdplus(nhd_vaa, 0, 0, 0, purge_non_dendritic = TRUE, warn = TRUE) %>% 
+  select(-TotDASqKM) %>% 
+  # add the revised tot drainage area:
+  left_join(., st_drop_geometry(flownet) %>% select(comid, sort_order, arbolatesum, totda), by= c("COMID"="comid"))
+  
+## to pull the specific flowlines from a COMID use the following,
+## however this will pull NHD layers from online, and WILL NOT
+## not use local cleaned network
+
+# nldi_nwis <- list(featureSource = "comid", featureID = 3917154)
+# navigate_nldi(nldi_feature = nldi_nwis,
+#               distance_km = 500,
+#               mode = "UT")$UT %>% #View() 
+#   st_drop_geometry() %>% View() # to just view comids
+#  #st_geometry() %>% mapview() # to plot
+
+# navigate the network and return COMIDs from a local network
+network_ls <- nhd_vaa %>% 
+  left_join(st_drop_geometry(flownet) %>% 
+              select(sort_order, comid), by="comid") %>% 
+  st_drop_geometry() %>% 
+  arrange(desc(sort_order)) %>% pull(comid) %>% as.list()
+
+# get list of comids for network
+network_nav_ls <- map(network_ls, 
+                      ~navigate_network(start = .x, 
+                                        network = nhd_vaa, mode = "UT",
+                                        distance_km = 500, 
+                                        output = "comid") %>%
+                        select(comid, hydroseq, dnhydroseq, uphydroseq) %>% 
+                        st_drop_geometry())
+
+# pull out just comids for accumulation?
+network_df <- tibble("startCOMID"=map_int(network_ls, ~.x),
+          "comids"=map(network_nav_ls, ~(.x[["comid"]]))) %>% 
+  dplyr::group_by(startCOMID) %>% 
+  mutate(comid_ls = paste(unlist(comids), sep='', collapse=', ')) %>% 
+  ungroup()
+
+# make a long version
+network_df_long <- network_df %>% select(-comid_ls) %>% unnest(comids)
+
+# write out:
+network_df %>%
+  select(-comids) %>%
+  write_csv(., file = here("output/lsh_network_comids_trimmed.csv"))
+
+write_rds(network_df, here("output/lsh_network_comids_trimmed.rds"))
+
+rm(network_df_long, network_ls, network_nav_ls, network_df)
+
+```
+
+```{r getNetworkdf, echo=FALSE, eval=TRUE}
+
+network_df <- read_rds(here("output/lsh_network_comids_trimmed.rds"))
+
+```
+
+## Calculate Accumulation
+
+First we need to use the cross walk to identify which variables require what type of calculation for the accumulation. Most will use the area weighted average, some require a min or max. 
+
+```{r accumVarSel}
+
+# crosswalk of variables
+xwalk <- read_csv(here("output/08_accumulated_final_xwalk.csv"))
+
+vars_awa <- xwalk %>% 
+  filter(accum_op_class == "AWA") %>% 
+  select(mod_input_final) %>% 
+  mutate(dat_output = case_when(
+    mod_input_final == "ann_min_precip_basin" ~ "cat_minp6190",
+    mod_input_final == "ann_max_precip_basin" ~ "cat_maxp6190",
+    mod_input_final == "cat_ppt7100_ann" ~ "pptavg_basin",
+    mod_input_final == "et_basin" ~ "cat_et",
+    mod_input_final == "wtdepave" ~ "cat_wtdep",
+    mod_input_final == "ann_min_precip" ~ "cat_minp6190",
+    mod_input_final == "ann_max_precip" ~ "cat_maxp6190",
+    mod_input_final == "pet_basin" ~ "cat_pet", 
+    mod_input_final == "rh_basin" ~ "cat_rh",
+    mod_input_final == "pptavg_basin" ~"cat_ppt7100_ann",
+    TRUE ~ mod_input_final))
+
+# filter to vars
+cat_df_awa <- catch_dat %>%
+  select(comid:wa_yr, vars_awa$dat_output)
+  
+  # drop the non info vars
+  select(comidwa_yr, varnames_awa$dat_output) %>%
+  select(comid:wa_yr, comid_flowline:upper, everything())
+
+```
+
+
+```{r accumCalc}
+
+
+
+# create flownetwork for accumulation
+flownet_accum <- prepare_nhdplus(nhd_vaa, 0, 0, 0, purge_non_dendritic = TRUE, warn = TRUE) %>% 
+  select(-TotDASqKM) %>% 
+  # add the revised tot drainage area:
+  left_join(., st_drop_geometry(catch_vaa_rev) %>% select(featureid, TotDASqKM=areaSum, areasqkm), by= c("COMID"="featureid"))  
+
+# need to change flownet_accum names
+flownet_accum <- flownet_accum %>% 
+  rename(ID = COMID, toID = toCOMID)
+
+# accum downstream
+accumulate_downstream <- function(x, var) {
+
+  try(x <- st_drop_geometry(x), silent = TRUE)
+  cat_order <- select(x, .data$ID)
+  x[["toID"]] <- tidyr::replace_na(x[["toID"]], 0)
+  x <- get_sorted(x)
+  x[["toID_row"]] <- match(x[["toID"]], x[["ID"]])
+  var_out <- x[[var]]
+  if(any(is.na(x[[var]]))) {
+    warning("NA values found, accumulation math may fail.")
+  }
+  toid_row <- x[["toID_row"]]
+  for(cat in 1:length(var_out)) {
+    var_out[toid_row[cat]] <- var_out[toid_row[cat]] + var_out[cat]
+  }
+  x[[var]] <- var_out
+  x <- distinct(left_join(cat_order, x, by = "ID"))
+  return(x[[var]])
+}
+
+lsh_accum <- select(lsh_flownet, ID = comid, toID = tocomid, AreaSqKM=areasqkm, LENGTHKM=lengthkm, Hydroseq=hydroseq) %>% 
+  left_join(catch_dat, by = c("ID" = "comid"))
+ 
+tst <- nhdplusTools:::accumulate_downstream(lsh_accum, var = "AreaSqKM")
+tst
+```
 
 
 
