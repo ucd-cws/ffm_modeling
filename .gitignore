@@ -46,3 +46,5 @@ docs/*html
 
 # DSTore
 .DS_Store
+
+data_input/scibase_nhd
