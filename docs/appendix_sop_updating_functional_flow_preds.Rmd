@@ -803,22 +803,9 @@ if (fs::dir_exists(here(dl_dir))) {
 # now download (this can take awhile)
 # not including the nhd xml and node files (see all_files): 11:04
 map2(all_files$url[6:nrow(all_files)], all_files$fname[6:nrow(all_files)], ~possibly(download.file(.x, glue("{here(dl_dir)}/{.y}")), otherwise = print("bad url"))
-beepr::beep(8)
 
-# Look at XML Files -------------------------------------------------------
-
-# get only xml NHDV2 files
-xml_ls <- dir_ls("data_raw/scibase_flow/", type = "file", regexp = "(.*)NHDV2(.*).xml")
-xml_ls
-
-# read one in and parse?
-xml1 <- as_list(xml2::read_xml(xml_ls[1]))
-
-# make long dataframe of data
-(xml_df <- as_tibble(xml1) %>% unnest_longer(metadata))
 
 # Now Aggegrate -----------------------------------------------------------
-
 
 source("R/functions/f_functions.R")
 source("R/functions/f_extract_filter_to_comids_single.R")
